@@ -50,6 +50,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.smartregister.AllConstants;
+import org.smartregister.AllConstants.INTENT_KEY;
 import org.smartregister.commonregistry.CommonPersonObjectClient;
 import org.smartregister.domain.FetchStatus;
 import org.smartregister.domain.SyncProgress;
@@ -95,6 +96,7 @@ import timber.log.Timber;
 
 import static android.content.DialogInterface.BUTTON_POSITIVE;
 import static org.smartregister.reveal.util.Constants.ANIMATE_TO_LOCATION_DURATION;
+import static org.smartregister.reveal.util.Constants.Action.STRUCTURE_TASK_SYNCED;
 import static org.smartregister.reveal.util.Constants.BusinessStatus.NOT_SPRAYED;
 import static org.smartregister.reveal.util.Constants.BusinessStatus.NOT_VISITED;
 import static org.smartregister.reveal.util.Constants.BusinessStatus.PARTIALLY_SPRAYED;
@@ -118,9 +120,9 @@ import static org.smartregister.reveal.util.Constants.VERTICAL_OFFSET;
 import static org.smartregister.reveal.util.FamilyConstants.Intent.START_REGISTRATION;
 import static org.smartregister.reveal.util.Utils.displayDistanceScale;
 import static org.smartregister.reveal.util.Utils.getDrawOperationalAreaBoundaryAndLabel;
-import static org.smartregister.reveal.util.Utils.getSyncEntityString;
 import static org.smartregister.reveal.util.Utils.getLocationBuffer;
 import static org.smartregister.reveal.util.Utils.getPixelsPerDPI;
+import static org.smartregister.reveal.util.Utils.getSyncEntityString;
 
 /**
  * Created by samuelgithengi on 11/20/18.
@@ -959,9 +961,17 @@ public class ListTasksActivity extends BaseMapActivity implements ListTaskContra
         public void onReceive(Context context, Intent intent) {
             Bundle extras = intent.getExtras();
             boolean localSyncDone;
-            if (extras != null && extras.getBoolean(UPDATE_LOCATION_BUFFER_RADIUS)) {
+            if (STRUCTURE_TASK_SYNCED.equals(intent.getAction()) && extras != null && extras.getBoolean(UPDATE_LOCATION_BUFFER_RADIUS)) {
                 float bufferRadius = getLocationBuffer() / getPixelsPerDPI(getResources());
                 kujakuMapView.setLocationBufferRadius(bufferRadius);
+            } else if (STRUCTURE_TASK_SYNCED.equals(intent.getAction())) {
+                localSyncDone = extras != null && extras.getBoolean(LOCAL_SYNC_DONE);
+                listTaskPresenter.refreshStructures(localSyncDone);
+            } else if (INTENT_KEY.TASK_GENERATED_EVENT.equals(intent.getAction())) {
+                Task task = extras != null ? (Task) extras.getSerializable(INTENT_KEY.TASK_GENERATED) : null;
+                if (task != null) {
+                    listTaskPresenter.resetFeatureTasks(task.getStructureId(), task);
+                }
             }
             localSyncDone = extras != null && extras.getBoolean(LOCAL_SYNC_DONE);
             listTaskPresenter.refreshStructures(localSyncDone);
